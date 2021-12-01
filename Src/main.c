@@ -48,53 +48,13 @@ typedef struct displayFloatToInt_s {
 // Analog loopback variables
 #define DELTA_MAX       0.1
 #define VDD             3.3
-#ifdef ANALOG_LOOPBACK_ENABLE
-#define DATA_SIZE				4
-#define FLOAT_CONVERSION		0
-#endif
-
-#ifdef LPS22HH_ENABLE
-#define DATA_SIZE				12
-#define FLOAT_CONVERSION		1
-#define LPS22HH_ODR				100.0	// Output data rate (one-shot, 1, 10, 25, 50, 75, 100, 200 Hz)
-#define LPS22HH_LOW_NOISE_EN	1		// Low-noise (0 disabled, 1 enabled)
-#define LPS22HH_LPF_CFG			3		// Device bandwidth (0 for ODR/2, 2 for ODR/9, 3 for ODR/20)
-#endif
-
-#ifdef LIS2MDL_ENABLE
-#define DATA_SIZE				12
-#define FLOAT_CONVERSION		0
-#define LIS2MDL_ODR             10.0    // Output data rate (10, 20, 50 or 100 Hz)
-#define LIS2MDL_LP              1       // Power mode (0 for high-resolution mode, 1 for low-power mode)
-#define LIS2MDL_LPF             0       // Bandwidth (0 for ODR/2, 1 for ODR/4)
-#endif
-
-#ifdef LIS2DW12_ENABLE
-#define DATA_SIZE				12
-#define FLOAT_CONVERSION		0
-#define LIS2DW12_ODR			5       // Output data rate (HP = High-perf., LP = Low-power) (0 power down, 1 HP 12.5Hz/LP 1.6Hz, 2 for 12.5Hz, 3 for 25Hz, 4 for 50Hz, 5 for 100Hz, 6 for 200Hz, 7 for HP 400Hz/LP 200Hz, 8 for HP 800Hz/LP 200Hz, 9 for HP 1600Hz/LP 200Hz)
-#define LIS2DW12_FS         	16      // Full-scale +-(2, 4, 8 or 16 g)
-#define LIS2DW12_BW_FILT        0       // Filter bandwidth (0 for ODR/2, 1 for ODR/4, 2 for ODR/10, 3 for ODR/20)
-#define LIS2DW12_MODE           0       // Mode (0 for low-power, 1 for high-performance, 2 for single data conversion)
-#define LIS2DW12_LP_MODE        1       // Low-power modes 1 to 4 (1 gives the max. rms noise, 4 gives the min. rms noise)
-#define LIS2DW12_LOW_NOISE      0       // Low-noise (0 disabled, 1 enabled)
-#define LIS2DW12_CTRL1_VAL		(LIS2DW12_ODR << 4) + (LIS2DW12_MODE << 2) + LIS2DW12_LP_MODE
-#define LIS2DW12_CTRL6_VAL     	(LIS2DW12_LOW_NOISE << 2)
-#define LIS2DW12_CTRL6_MASK		0xFB
-#endif
-
-#ifdef CUSTOM_SENSOR_ENABLE
-#define DATA_SIZE				4
-#define FLOAT_CONVERSION		1
-#endif
-
 
 
 #ifdef MULTI_SENSOR_ENABLE
 #define DATA_SIZE				16
 #define FLOAT_CONVERSION		0
 #define LIS2DW12_ODR			5       // Output data rate (HP = High-perf., LP = Low-power) (0 power down, 1 HP 12.5Hz/LP 1.6Hz, 2 for 12.5Hz, 3 for 25Hz, 4 for 50Hz, 5 for 100Hz, 6 for 200Hz, 7 for HP 400Hz/LP 200Hz, 8 for HP 800Hz/LP 200Hz, 9 for HP 1600Hz/LP 200Hz)
-#define LIS2DW12_FS         	16      // Full-scale +-(2, 4, 8 or 16 g)
+#define LIS2DW12_FS         	2      	// Full-scale +-(2, 4, 8 or 16 g)
 #define LIS2DW12_BW_FILT        0       // Filter bandwidth (0 for ODR/2, 1 for ODR/4, 2 for ODR/10, 3 for ODR/20)
 #define LIS2DW12_MODE           0       // Mode (0 for low-power, 1 for high-performance, 2 for single data conversion)
 #define LIS2DW12_LP_MODE        4       // Low-power modes 1 to 4 (1 gives the max. rms noise, 4 gives the min. rms noise)
@@ -124,7 +84,7 @@ TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN PV */
 // Print and read buffer
 static char dataOut[MAX_BUF_SIZE];
-char dataIn[4];
+char dataIn[2];
 // Timer IRQ
 extern int TIM2_IRQ_FLAG;
 // Sensors
@@ -148,30 +108,11 @@ static void MX_DAC_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-#ifdef ANALOG_LOOPBACK_ENABLE
-static void	Analog_Loopback(void);
-#endif
+
 
 static void read_task(void);
 
-#ifdef LPS22HH_ENABLE
-static void LPS22HH_Config(void);
-static void LPS22HH_Handler(int verbose);
-#endif
 
-#ifdef LIS2MDL_ENABLE
-static void LIS2MDL_Config(void);
-static void LIS2MDL_Handler(int verbose);
-#endif
-
-#ifdef LIS2DW12_ENABLE
-static void LIS2DW12_Config(void);
-static void LIS2DW12_Handler(int save, int verbose);
-#endif
-
-#ifdef CUSTOM_SENSOR_ENABLE
-static void Custom_Sensor_Handler(int save, int verbose);
-#endif
 
 #ifdef MULTI_SENSOR_ENABLE
 static void Multi_Sensor_Config(void);
@@ -199,10 +140,11 @@ int _read(int file, char *result, size_t len);
 
 // CHANGE PARAMETERS
 // USER PARAMETERS CAN BE SET
-#define PASSED 				5
-#define MARGE 				10 //in percent
-#define NUMBER_OF_SAMPLES	100
-#define NUMBER_OF_BEERS		5
+#define PASSED 				10
+//#define MARGE 				50 //in percent
+#define NUMBER_OF_SAMPLES	10
+#define NUMBER_OF_BEERS		3
+#define ZMARGE				3000
 
 //GLOBAL VARIABLES for states
 int Dormancy    = -1;
@@ -269,15 +211,6 @@ int main(void)
   print_flash_info();
 
   /* Sensor configuration */
-  #ifdef LPS22HH_ENABLE
-    LPS22HH_Config();
-  #endif
-  #ifdef LIS2MDL_ENABLE
-    LIS2MDL_Config();
-  #endif
-  #ifdef LIS2DW12_ENABLE
-    LIS2DW12_Config();
-  #endif
   #ifdef MULTI_SENSOR_ENABLE
     Multi_Sensor_Config();
   #endif
@@ -287,39 +220,15 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    #ifdef IKS01A3_DATA_LOG_TERMINAL_ENABLE
-    /* USER CODE END WHILE */
-
-  MX_MEMS_Process();
-    /* USER CODE BEGIN 3 */
-    #endif
-
-    /* Analog loopback code */
-    #ifdef ANALOG_LOOPBACK_ENABLE
-      Analog_Loopback();
-    #endif
-
-    if (WTBR==1 && CountBeers == NUMBER_OF_BEERS) {
-        SaveData = 0;
-        Dormancy = -1;
-        WTBR = 0;
-
-    	printf("Acquisition stopped...\r\n");
-    	printf("Press 'R' to read the data\r\n");
-
-    	if (data_ind != 0) {
-    	  write_flash(Flash_addr, &data_buffer[0], data_ind, 0);
-    	}
-    }
+    //printf("%d\t%d\r\n",CountBeers,CountSamples);
+    //printf("%d\t%d\t%d\r\n",Dormancy,SaveData,WTBR);
 
     /* Button handling */
     if (ButtonPressed) {
-
+    	ButtonPressed = 0;
     	if(Dormancy == -1) {
 			ButtonPressed = 0;
-			SaveData = 0;
-			Dormancy = 1;
-			WTBR = 0;
+			SaveData = 0;Dormancy = 1;WTBR = 0;
 
 			CountPassed = 0;
 			CountBeers = 0;
@@ -331,6 +240,14 @@ int main(void)
 			data_ind = 0;
 			Flash_addr = FLASH_BANK2_BASE;
     	}
+    	else {
+            SaveData = 0;Dormancy = -1;WTBR = 0; //
+        	printf("Acquisition stopped...\r\n");
+        	printf("Press 'R' to read the data\r\n");
+        	if (data_ind != 0) {
+        	  write_flash(Flash_addr, &data_buffer[0], data_ind, 0);
+        	}
+        }
 
     }
 
@@ -355,24 +272,6 @@ int main(void)
       TIM2_IRQ_FLAG = 0;
 
       /* LPS22HH pressure sensor */
-      #ifdef LPS22HH_ENABLE
-        LPS22HH_Handler(0);
-      #endif
-
-      /* LIS2MDL magnetometer sensor */
-      #ifdef LIS2MDL_ENABLE
-        LIS2MDL_Handler(0);
-      #endif
-
-      /* LIS2DW12 accelerometer sensor */
-      #ifdef LIS2DW12_ENABLE
-        LIS2DW12_Handler(1, 0);
-      #endif
-
-      /* Custom sensor */
-      #ifdef CUSTOM_SENSOR_ENABLE
-        Custom_Sensor_Handler(1, 0);
-      #endif
 
       /* Multiple sensors */
 	  #ifdef MULTI_SENSOR_ENABLE
@@ -624,56 +523,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 /* Analog loopback task */
-#ifdef ANALOG_LOOPBACK_ENABLE
-static void Analog_Loopback(void)
-{
-  /* Variables */
-  uint32_t dacValue;
-  uint32_t adcValue;
-  displayFloatToInt_t float_out;
-  displayFloatToInt_t float_in;
-  displayFloatToInt_t float_diff;
-
-  for (float out_value = 0.0f; out_value < VDD; out_value += VDD/10) {
-    /* Output value on DAC1/1 */
-    dacValue = (uint32_t) 4095 * out_value/VDD;
-    HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
-    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dacValue);
-    HAL_Delay(500);
-
-    /* Read value on ADC1/0 */
-    HAL_ADC_Start(&hadc);
-    if (HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY) == HAL_OK)
-    {
-      adcValue = HAL_ADC_GetValue(&hadc);
-    }
-    else
-    {
-      adcValue = 0;
-    }
-    float in_value = ((float) adcValue)/4095 * VDD;
-    float diff_value = fabs(out_value - in_value);
-
-    /* Data conversion to float representation */
-    floatToInt(out_value, &float_out, 3);
-    floatToInt(in_value, &float_in, 3);
-    floatToInt(diff_value, &float_diff, 3);
-
-    /* Display difference between two values */
-    snprintf(dataOut, MAX_BUF_SIZE, "(out:%d.%03d) - (in:%d.%03d) = (%d.%03d)\t", (int) float_out.out_int, (int) float_out.out_dec, (int) float_in.out_int, (int) float_in.out_dec, (int) float_diff.out_int, (int) float_diff.out_dec);
-    printf("%s", dataOut);
-    if (diff_value > DELTA_MAX) {
-      printf("FAIL\r\n");
-    } else {
-      printf("OK\r\n");
-    }
-
-    /* Toggle LED for visual check */
-    BSP_LED_Toggle(LED2);
-    HAL_Delay(500);
-  }
-}
-#endif
 
 /* Read task */
 static void read_task(void)
@@ -684,22 +533,8 @@ static void read_task(void)
   uint8_t count = 0;
 
   /* Data labels */
-  #ifdef LPS22HH_ENABLE
-    printf("press\talt\ttemp\r\n");
-  #endif
-  #ifdef LIS2MDL_ENABLE
-    printf("magx\tmagy\tmagz\r\n");
-  #endif
-  #ifdef LIS2DW12_ENABLE
-    printf("accx\taccy\taccz\r\n");
-  #endif
-  #ifdef CUSTOM_SENSOR_ENABLE
-    printf("vout\r\n");
-  #endif
   #ifdef MULTI_SENSOR_ENABLE
-    //printf("vout\taccx\taccy\taccz\r\n");
-    //printf("taccx\taccy\taccz\vout\r\n");
-    printf("accz\vout\r\n");
+    printf("accz\tvout\r\n");
   #endif
 
   /* Read 1st Flash data */
@@ -716,18 +551,7 @@ static void read_task(void)
 	}
 
     /* Print data to console */
-	#ifdef LPS22HH_ENABLE
-      snprintf(dataOut, MAX_BUF_SIZE, "%d.%06d\t%d.%06d\t%d.%06d\r\n", (int) int_data[0].out_int, (int) int_data[0].out_dec, (int) int_data[1].out_int, (int) int_data[1].out_dec, (int) int_data[2].out_int, (int) int_data[2].out_dec);
-    #endif
-    #ifdef LIS2MDL_ENABLE
-      snprintf(dataOut, MAX_BUF_SIZE, "%d\t%d\t%d\r\n", (int) Flash_rdata[0], (int) Flash_rdata[1], (int) Flash_rdata[2]);
-    #endif
-    #ifdef LIS2DW12_ENABLE
-      snprintf(dataOut, MAX_BUF_SIZE, "%d\t%d\t%d\r\n", (int) Flash_rdata[0], (int) Flash_rdata[1], (int) Flash_rdata[2]);
-    #endif
-    #ifdef CUSTOM_SENSOR_ENABLE
-      snprintf(dataOut, MAX_BUF_SIZE, "%d.%06d\r\n", (int) int_data[0].out_int, (int) int_data[0].out_dec);
-    #endif
+
     #ifdef MULTI_SENSOR_ENABLE
       /* Convert ADC data to int */
       //floatToInt(UintToFloat(Flash_rdata[3]), &int_data[0], 6);
@@ -758,208 +582,16 @@ static void read_task(void)
 }
 
 /* LPS22HH pressure/temperature sensor */
-#ifdef LPS22HH_ENABLE
-static void LPS22HH_Config(void)
-{
-  LPS22HH_PRESS_SetOutputDataRate(EnvCompObj[IKS01A3_LPS22HH_0], LPS22HH_ODR);
-  LPS22HH_Set_Power_Mode(EnvCompObj[IKS01A3_LPS22HH_0], LPS22HH_LOW_NOISE_EN);
-  LPS22HH_Set_Filter_Mode(EnvCompObj[IKS01A3_LPS22HH_0], LPS22HH_LPF_CFG);
-}
 
-static void LPS22HH_Handler(int verbose)
-{
-  /* Initialize variables */
-  float float_data[DATA_SIZE_WORD];
-  displayFloatToInt_t press_value, alt_value, temp_value;
-
-  /* Read sensors */
-  if (LPS22HH_PRESS_GetPressure(EnvCompObj[IKS01A3_LPS22HH_0], &float_data[0]) != LPS22HH_ERROR) {
-    float_data[1] = pressureToAltitude(float_data[0]);
-    floatToInt(float_data[0], &press_value, 2);
-    floatToInt(float_data[1], &alt_value, 2);
-  }
-  if (LPS22HH_TEMP_GetTemperature(EnvCompObj[IKS01A3_LPS22HH_0], &float_data[2]) != LPS22HH_ERROR) {
-    floatToInt(float_data[2], &temp_value, 2);
-  }
-
-  for (int i=0; i<DATA_SIZE_WORD; i++) {
-    /* Write Flash memory when buffer is full */
-    if (data_ind >= BUFFER_SIZE) {
-      write_flash(Flash_addr, &data_buffer[0], BUFFER_SIZE, 0);
-      Flash_addr += FLASH_PAGE_SIZE;
-      data_ind = 0;
-    }
-
-    /* Write data buffer */
-    data_buffer[data_ind] = FloatToUint(float_data[i]);
-    data_ind++;
-  }
-
-  /* Print data */
-  if (verbose) {
-    sprintf(dataOut, "LPS22HH: Press = %d.%03d [hPa], Alt = %d.%03d [m], Temp = %d.%03d [deg]\r\n", (int) press_value.out_int, (int) press_value.out_dec, (int) alt_value.out_int, (int) alt_value.out_dec, (int) temp_value.out_int, (int) temp_value.out_dec);
-    printf("%s", dataOut);
-  }
-}
-#endif
 
 /* LIS2MDL magnetometer sensor */
-#ifdef LIS2MDL_ENABLE
-static void LIS2MDL_Config(void)
-{
-  LIS2MDL_MAG_SetOutputDataRate(MotionCompObj[IKS01A3_LIS2MDL_0], LIS2MDL_ODR);
-  LIS2MDL_MAG_Set_Power_Mode(MotionCompObj[IKS01A3_LIS2MDL_0], LIS2MDL_LP);
-  LIS2MDL_MAG_Set_Filter_Mode(MotionCompObj[IKS01A3_LIS2MDL_0], LIS2MDL_LPF);
-}
 
-static void LIS2MDL_Handler(int verbose)
-{
-  /* Initialize variables */
-  int32_t int_data[DATA_SIZE_WORD];
-  LIS2MDL_Axes_t mag_axes;
-
-  /* Read sensors */
-  if (LIS2MDL_MAG_GetAxes(MotionCompObj[IKS01A3_LIS2MDL_0], &mag_axes) != LIS2MDL_ERROR) {
-	int_data[0] = mag_axes.x;
-	int_data[1] = mag_axes.y;
-	int_data[2] = mag_axes.z;
-  }
-
-  for (int i=0; i<DATA_SIZE_WORD; i++) {
-	/* Write Flash memory when buffer is full */
-	if (data_ind >= BUFFER_SIZE) {
-	  write_flash(Flash_addr, &data_buffer[0], BUFFER_SIZE, 0);
-	  Flash_addr += FLASH_PAGE_SIZE;
-	  data_ind = 0;
-	}
-
-	/* Write data buffer */
-	data_buffer[data_ind] = (uint32_t) int_data[i];
-	data_ind++;
-  }
-
-  /* Print data */
-  if (verbose) {
-    sprintf(dataOut, "LIS2MDL: x = %d [mG], y = %d [mG], z = %d [mG]\r\n", (int) mag_axes.x, (int) mag_axes.y, (int) mag_axes.z);
-    printf("%s", dataOut);
-  }
-}
-#endif
 
 /* LIS2DW12 accelerometer sensor */
-#ifdef LIS2DW12_ENABLE
-static void LIS2DW12_Config(void)
-{
-  uint8_t ReadData, WriteData;
-  LIS2DW12_ACC_SetFullScale(MotionCompObj[IKS01A3_LIS2DW12_0], LIS2DW12_FS);
-  LIS2DW12_ACC_Set_Filter_Mode(MotionCompObj[IKS01A3_LIS2DW12_0], LIS2DW12_BW_FILT);
 
-  // CTRL 1 register
-  LIS2DW12_Write_Reg(MotionCompObj[IKS01A3_LIS2DW12_0], (uint8_t) 0x20, LIS2DW12_CTRL1_VAL);
-  LIS2DW12_Read_Reg(MotionCompObj[IKS01A3_LIS2DW12_0], (uint8_t) 0x20, &ReadData);
-  printf("LIS2DW12 reg 0x%x (read): 0x%x\r\n", (uint8_t) 0x20, ReadData);
-
-  // CTRL 6 register
-  LIS2DW12_Read_Reg(MotionCompObj[IKS01A3_LIS2DW12_0], (uint8_t) 0x25, &ReadData);
-  WriteData = (ReadData & LIS2DW12_CTRL6_MASK) + LIS2DW12_CTRL6_VAL;
-  LIS2DW12_Write_Reg(MotionCompObj[IKS01A3_LIS2DW12_0], (uint8_t) 0x25, WriteData);
-  LIS2DW12_Read_Reg(MotionCompObj[IKS01A3_LIS2DW12_0], (uint8_t) 0x25, &ReadData);
-  printf("LIS2DW12 reg 0x%x (read): 0x%x\r\n", (uint8_t) 0x25, ReadData);
-}
-
-static void LIS2DW12_Handler(int save, int verbose)
-{
-  /* Initialize variables */
-  int32_t int_data[DATA_SIZE_WORD];
-  LIS2DW12_AxesRaw_t acc_axes;
-
-  /* Read sensors */
-  if (LIS2DW12_ACC_GetAxesRaw(MotionCompObj[IKS01A3_LIS2DW12_0], &acc_axes) != LIS2DW12_ERROR) {
-	int_data[0] = acc_axes.x;
-	int_data[1] = acc_axes.y;
-	int_data[2] = acc_axes.z;
-  }
-
-  if (save) {
-    write_flash(Flash_addr, (uint32_t*) &int_data[0], DATA_SIZE_WORD, 0);
-  	Flash_addr += DATA_SIZE;
-  }
-
-//  for (int i=0; i<DATA_SIZE_WORD; i++) {
-//	/* Write Flash memory when buffer is full */
-//	if (data_ind >= BUFFER_SIZE) {
-//	  write_flash(Flash_addr, &data_buffer[0], BUFFER_SIZE, 0);
-//	  Flash_addr += FLASH_PAGE_SIZE;
-//	  data_ind = 0;
-//	}
-//
-//	/* Write data buffer */
-//	data_buffer[data_ind] = (uint32_t) int_data[i];
-//	data_ind++;
-//  }
-
-  /* Print data */
-  if (verbose) {
-	sprintf(dataOut, "%d\t%d\t%d\r\n", (int) acc_axes.x, (int) acc_axes.y, (int) acc_axes.z);
-    //sprintf(dataOut, "LIS2DW12: x = %d [mg], y = %d [mg], z = %d [mg]\r\n", (int) acc_axes.x, (int) acc_axes.y, (int) acc_axes.z);
-    printf("%s", dataOut);
-  }
-}
-#endif
 
 /* Custom sensor */
-#ifdef CUSTOM_SENSOR_ENABLE
-static void Custom_Sensor_Handler(int save, int verbose)
-{
-  /* Initialize variables */
-  uint32_t adcValue, storedValue;
-  float in_value;
-  displayFloatToInt_t float_in;
 
-  /* Read value on ADC1/0 */
-  HAL_ADC_Start(&hadc);
-  if (HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY) == HAL_OK)
-  {
-    adcValue = HAL_ADC_GetValue(&hadc);
-  }
-  else
-  {
-    adcValue = 0;
-  }
-  in_value = ((float) adcValue)/4095 * VDD;
-
-  if (save) {
-	storedValue = FloatToUint(in_value);
-    write_flash(Flash_addr, &storedValue, DATA_SIZE_WORD, 0);
-  	Flash_addr += DATA_SIZE;
-  }
-
-//  if (save) {
-//    for (int i=0; i<DATA_SIZE_WORD; i++) {
-//	  /* Write Flash memory when buffer is full */
-//	  if (data_ind >= BUFFER_SIZE) {
-//	    write_flash(Flash_addr, &data_buffer[0], BUFFER_SIZE, 0);
-//	    Flash_addr += FLASH_PAGE_SIZE;
-//	    data_ind = 0;
-//	  }
-//
-//	  /* Write data buffer */
-//	  data_buffer[data_ind] = FloatToUint(in_value);
-//	  data_ind++;
-//    }
-//  }
-
-  /* Data conversion to float representation */
-  floatToInt(in_value, &float_in, 3);
-
-  /* Print data */
-  if (verbose) {
-	sprintf(dataOut, "%d.%03d\r\n", (int) float_in.out_int, (int) float_in.out_dec);
-    //sprintf(dataOut, "Custom sensor: %d.%03d\r\n", (int) float_in.out_int, (int) float_in.out_dec);
-    printf("%s", dataOut);
-  }
-}
-#endif
 
 /* Multiple sensors */
 #ifdef MULTI_SENSOR_ENABLE
@@ -1037,7 +669,8 @@ static void Multi_Sensor_Handler(int save, int verbose)
 		  SaveData = 0;
 		  WTBR = 0;
 	  }
-	  else if (mean > (1 + MARGE/100) ) {// MAKE OFF DORMANCY
+	  else if (mean > ZMARGE) {// MAKE ON DORMANCY
+		  printf("Make on dormancy \r\n");
 		  Dormancy = 1;
 		  SaveData = 0;
 		  WTBR = 0;
@@ -1046,22 +679,24 @@ static void Multi_Sensor_Handler(int save, int verbose)
 
   else if(Dormancy==1) {
 	  //printf('in dormancy');
-	  if (mean < (-1 + MARGE/100) ) {// MAKE OFF DORMANCY
+	  if (mean < -ZMARGE) {// MAKE OFF DORMANCY
+		  printf("Make off dormancy \r\n");
 		  Dormancy = 0;
 		  SaveData = 1;
 		  WTBR = 0;
-
 		  CountBeers++;
+		  printf("CountBeers = %d\n\r",CountBeers);
 	  }
   }
 
   else {
-	  if (save) {
+	  if (SaveData) {
 		write_flash(Flash_addr, (uint32_t*) &int_data[0], DATA_SIZE_WORD, 0);
 		Flash_addr += DATA_SIZE;
 
 		CountSamples ++;
 		if (CountSamples == NUMBER_OF_SAMPLES) { //WTBR ON
+			printf("WTBR is on\r\n");
 			Dormancy = 0;
 			WTBR = 1;
 			SaveData = 0;
@@ -1069,6 +704,7 @@ static void Multi_Sensor_Handler(int save, int verbose)
 			CountSamples = 0;
 		}
 	  }
+	  //printf("Here is an error \; \r\n");
   }
   /* Print data */
   if (verbose) {
@@ -1243,21 +879,5 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
