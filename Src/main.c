@@ -51,7 +51,7 @@ typedef struct displayFloatToInt_s {
 
 
 #ifdef MULTI_SENSOR_ENABLE
-#define DATA_SIZE				16
+#define DATA_SIZE				8
 #define FLOAT_CONVERSION		0
 #define LIS2DW12_ODR			5       // Output data rate (HP = High-perf., LP = Low-power) (0 power down, 1 HP 12.5Hz/LP 1.6Hz, 2 for 12.5Hz, 3 for 25Hz, 4 for 50Hz, 5 for 100Hz, 6 for 200Hz, 7 for HP 400Hz/LP 200Hz, 8 for HP 800Hz/LP 200Hz, 9 for HP 1600Hz/LP 200Hz)
 #define LIS2DW12_FS         	2      	// Full-scale +-(2, 4, 8 or 16 g)
@@ -63,8 +63,8 @@ typedef struct displayFloatToInt_s {
 #define LIS2DW12_CTRL6_VAL     	(LIS2DW12_LOW_NOISE << 2)
 #define LIS2DW12_CTRL6_MASK		0xFB
 #endif
-//#define DATA_SIZE_WORD			DATA_SIZE/4
-#define DATA_SIZE_WORD		DATA_SIZE/2
+#define DATA_SIZE_WORD			DATA_SIZE/4
+//#define DATA_SIZE_WORD		DATA_SIZE/2
 
 
 /* USER CODE END PD */
@@ -84,7 +84,7 @@ TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN PV */
 // Print and read buffer
 static char dataOut[MAX_BUF_SIZE];
-char dataIn[2];
+char dataIn[4];
 // Timer IRQ
 extern int TIM2_IRQ_FLAG;
 // Sensors
@@ -142,17 +142,16 @@ int _read(int file, char *result, size_t len);
 // USER PARAMETERS CAN BE SET
 #define PASSED 				10
 //#define MARGE 				50 //in percent
-#define NUMBER_OF_SAMPLES	10
-#define NUMBER_OF_BEERS		3
+#define NUMBER_OF_SAMPLES	100
+//#define NUMBER_OF_BEERS		3
 #define ZMARGE				3000
 
 //GLOBAL VARIABLES for states
 int Dormancy    = -1;
 int WTBR		= 0;
-//int save = 0; already set further
-
+//saveData set further
 //X passed AccZ data
-uint32_t PassedAccZ[DATA_SIZE_WORD*PASSED];
+uint32_t PassedAccZ[DATA_SIZE*PASSED];
 
 //Counters
 int CountPassed		= 0;
@@ -640,6 +639,7 @@ static void Multi_Sensor_Handler(int save, int verbose)
   else
   {
     adcValue = 0;
+    printf("no value in hadc\r\n");
   }
   in_value = ((float) adcValue)/4095 * VDD;
   //int_data[3] = FloatToUint(in_value);
@@ -664,12 +664,12 @@ static void Multi_Sensor_Handler(int save, int verbose)
   }
 
   if(WTBR == 1) {
-	  if(CountBeers == NUMBER_OF_BEERS) {
-		  Dormancy = -1;
-		  SaveData = 0;
-		  WTBR = 0;
-	  }
-	  else if (mean > ZMARGE) {// MAKE ON DORMANCY
+	  //if(CountBeers == NUMBER_OF_BEERS) {
+	  //	  Dormancy = -1;
+	  //  SaveData = 0;
+	  //  WTBR = 0;
+	  //}
+	  if (mean > ZMARGE) {// MAKE ON DORMANCY
 		  printf("Make on dormancy \r\n");
 		  Dormancy = 1;
 		  SaveData = 0;
